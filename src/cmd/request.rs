@@ -139,10 +139,7 @@ pub fn set_mode(md: Mode) -> Request {
 }
 
 pub fn bind(md: Mode, ch: u8) -> Result<Request, Error> {
-    let mut req = Request::default();
-    req.mode = md;
-    req.ctr = CtrRequest::BindModeOn;
-    req.cmd = Cmd::Bind;
+    let mut req = Request { mode: md, ctr: CtrRequest::BindModeOn, cmd: Cmd::Bind, ..Default::default() };
     req.set_ch(ch)?;
     Ok(req)
 }

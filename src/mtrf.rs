@@ -8,9 +8,9 @@ use anyhow::Error;
 use serialport;
 use serialport::{DataBits, SerialPort, StopBits};
 
+use crate::cmd::MESSAGE_LENGTH;
 use crate::cmd::request::Request;
 use crate::cmd::response::Response;
-use crate::cmd::MESSAGE_LENGTH;
 use crate::PortInfo;
 
 pub struct Mtrf {
@@ -128,11 +128,9 @@ impl Drop for Mtrf {
     fn drop(&mut self) {
         if let Err(err) = self.port.set_break() {
             warn!("Failed to drop Mtrf: {}", err);
-        } else {
-            if let Some(join) = self.join.take() {
-                if let Err(err) = join.join() {
-                    warn!("Failed to drop Mtrf: {:?}", err);
-                }
+        } else if let Some(join) = self.join.take() {
+            if let Err(err) = join.join() {
+                warn!("Failed to drop Mtrf: {:?}", err);
             }
         }
     }
@@ -144,9 +142,9 @@ pub trait OnMessage {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::cmd::Mode;
     use crate::cmd::request::bind;
     use crate::cmd::response::Response;
-    use crate::cmd::Mode;
     use crate::mtrf::{Mtrf, OnMessage};
     use crate::ports;
 
