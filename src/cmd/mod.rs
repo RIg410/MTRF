@@ -50,7 +50,7 @@ impl TryFrom<u8> for Mode {
             3 => Mode::TX,
             4 => Mode::TX,
             5 => Mode::TX,
-            _ => return Err(anyhow!("Failed to decode mode:{}", value))
+            _ => return Err(anyhow!("Failed to decode mode:{}", value)),
         })
     }
 }
@@ -261,7 +261,7 @@ impl TryFrom<&[u8]> for SetBrightness {
                 buf[2] = value[3];
                 SetBrightness::Fmt3(buf)
             }
-            _=> return Err(anyhow!("Failed to decode SetBrightness: {:?}", value))
+            _ => return Err(anyhow!("Failed to decode SetBrightness: {:?}", value)),
         })
     }
 }
@@ -301,7 +301,7 @@ impl TryFrom<&[u8]> for TemporaryOn {
                 buf[1] = value[2];
                 TemporaryOn::Fmt2(buf)
             }
-            _=> return Err(anyhow!("Failed to decode TemporaryOn: {:?}", value))
+            _ => return Err(anyhow!("Failed to decode TemporaryOn: {:?}", value)),
         })
     }
 }

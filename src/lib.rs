@@ -7,7 +7,6 @@ pub mod cmd;
 pub mod mtrf;
 
 use anyhow::Error;
-use serialport;
 use serialport::SerialPortType;
 
 pub const MANUFACTURER: &str = "FTDI";

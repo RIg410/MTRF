@@ -8,20 +8,23 @@ use anyhow::Error;
 use serialport;
 use serialport::{DataBits, SerialPort, StopBits};
 
-use crate::cmd::{MESSAGE_LENGTH};
 use crate::cmd::request::Request;
 use crate::cmd::response::Response;
+use crate::cmd::MESSAGE_LENGTH;
 use crate::PortInfo;
 
 pub struct Mtrf {
     port: Box<dyn SerialPort>,
     join: Option<JoinHandle<()>>,
     resp_rx: Receiver<Response>,
-    req_tx: Sender<Request>,
+    req_tx: Sender<(Request, bool)>,
 }
 
 impl Mtrf {
-    pub fn new<OnMsg: OnMessage + Send + 'static>(port: &PortInfo, on_msg: OnMsg) -> Result<Mtrf, Error> {
+    pub fn new<OnMsg: OnMessage + Send + 'static>(
+        port: &PortInfo,
+        on_msg: OnMsg,
+    ) -> Result<Mtrf, Error> {
         let port_builder = serialport::new(&port.port_name, 9600)
             .stop_bits(StopBits::One)
             .data_bits(DataBits::Eight)
@@ -33,17 +36,29 @@ impl Mtrf {
 
         let (req_tx, req_rx) = channel();
         let read_port = port.try_clone()?;
-        Ok(Mtrf { port, join: Some(Self::run_loop(read_port, req_rx, resp_tx, on_msg)), resp_rx, req_tx })
+        Ok(Mtrf {
+            port,
+            join: Some(Self::run_loop(read_port, req_rx, resp_tx, on_msg)),
+            resp_rx,
+            req_tx,
+        })
     }
 
-    fn run_loop<OnMsg: OnMessage + Send + 'static>(mut port: Box<dyn SerialPort>, req_rx: Receiver<Request>, resp_tx: Sender<Response>, on_msg: OnMsg) -> JoinHandle<()> {
+    fn run_loop<OnMsg: OnMessage + Send + 'static>(
+        mut port: Box<dyn SerialPort>,
+        req_rx: Receiver<(Request, bool)>,
+        resp_tx: Sender<Response>,
+        on_msg: OnMsg,
+    ) -> JoinHandle<()> {
         thread::spawn(move || {
             let mut wait_ch = None;
             loop {
                 match req_rx.try_recv() {
-                    Ok(req) => {
+                    Ok((req, wait_resp)) => {
                         debug!("Write request {}", req);
-                        wait_ch = Some(req.ch());
+                        if wait_resp {
+                            wait_ch = Some(req.ch());
+                        }
                         if let Err(err) = port.write_all(&req.to_message()) {
                             warn!("Failed to write request {}", err);
                             break;
@@ -88,7 +103,6 @@ impl Mtrf {
                         }
                         Err(err) => {
                             warn!("Failed to decode response {}: msg:[{:?}]", err, msg);
-
                         }
                     }
                 } else {
@@ -98,8 +112,14 @@ impl Mtrf {
         })
     }
 
+    pub fn send(&mut self, req: Request) -> Result<(), Error> {
+        self.req_tx.send((req, false))?;
+        Ok(())
+    }
+
+
     pub fn send_request(&mut self, req: Request) -> Result<Response, Error> {
-        self.req_tx.send(req)?;
+        self.req_tx.send((req, true))?;
         Ok(self.resp_rx.recv()?)
     }
 }
@@ -124,11 +144,11 @@ pub trait OnMessage {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::cmd::Mode;
     use crate::cmd::request::bind;
+    use crate::cmd::response::Response;
+    use crate::cmd::Mode;
     use crate::mtrf::{Mtrf, OnMessage};
     use crate::ports;
-    use crate::cmd::response::Response;
 
     pub struct Logger;
 
@@ -142,6 +162,7 @@ pub mod tests {
     pub fn bind_and_read() {
         let port = &ports().unwrap()[0];
         let mut mtrf = Mtrf::new(port, Logger).unwrap();
-        mtrf.send_request(bind(Mode::TxF, 2).unwrap()).unwrap();
+        mtrf.send_request(bind(Mode::TxF, 2).unwrap())
+            .unwrap();
     }
 }

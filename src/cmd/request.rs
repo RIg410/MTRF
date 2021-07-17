@@ -2,29 +2,14 @@ use std::fmt;
 
 use anyhow::Error;
 
-use crate::cmd::{CH_INDEX, Cmd, CRC_INDEX, CtrRequest, MESSAGE_LENGTH, Mode, SetBrightness, TemporaryOn, CMD_INDEX};
+use crate::cmd::{
+    Cmd, CtrRequest, Mode, SetBrightness, TemporaryOn, CH_INDEX, CMD_INDEX, CRC_INDEX,
+    MESSAGE_LENGTH,
+};
 
 const ST: u8 = 171;
 const SP: u8 = 172;
 const RES: u8 = 0;
-//
-// #[derive(Debug, Copy, Clone, PartialEq, Ord, PartialOrd, Eq)]
-// pub struct Request([u8; MESSAGE_LENGTH]);
-//
-// impl Request {
-//     pub fn ch(&self) -> u8 {
-//         self.0[CH_INDEX]
-//     }
-// }
-//
-// impl fmt::Display for Request {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         let cmd = &self.0;
-//         write!(f, "ST:{} MODE:{} CTR:{} RES:{} CH:{} CMD:{} FMT:{} D0:{} D1:{} D2:{} D3:{} ID0:{} ID1:{} ID2:{} ID3:{} CRC:{} SP:{}",
-//                cmd[0], cmd[1], cmd[2], cmd[3], cmd[CH_INDEX], cmd[5], cmd[6], cmd[7], cmd[8], cmd[9], cmd[10], cmd[11], cmd[12], cmd[13], cmd[14], cmd[CRC_INDEX], cmd[16],
-//         )
-//     }
-// }
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Request {
@@ -57,37 +42,33 @@ impl Request {
 
         msg[CMD_INDEX] = self.cmd.as_u8();
         match self.cmd {
-            Cmd::SetBrightness(br) => {
-                match br {
-                    SetBrightness::Fmt1(d0) => {
-                        msg[6] = 1;
-                        msg[7] = d0;
-                    }
-                    SetBrightness::Fmt3(d) => {
-                        msg[6] = 3;
-                        msg[7] = d[0];
-                        msg[8] = d[1];
-                        msg[9] = d[2];
-                    }
+            Cmd::SetBrightness(br) => match br {
+                SetBrightness::Fmt1(d0) => {
+                    msg[6] = 1;
+                    msg[7] = d0;
                 }
-            }
+                SetBrightness::Fmt3(d) => {
+                    msg[6] = 3;
+                    msg[7] = d[0];
+                    msg[8] = d[1];
+                    msg[9] = d[2];
+                }
+            },
             Cmd::BrightReg(reg) => {
                 msg[6] = 1;
                 msg[7] = reg;
             }
-            Cmd::TemporaryOn(tem) => {
-                match tem {
-                    TemporaryOn::Fmt1(d0) => {
-                        msg[6] = 1;
-                        msg[7] = d0;
-                    }
-                    TemporaryOn::Fmt2(d) => {
-                        msg[6] = 2;
-                        msg[7] = d[0];
-                        msg[8] = d[1];
-                    }
+            Cmd::TemporaryOn(tem) => match tem {
+                TemporaryOn::Fmt1(d0) => {
+                    msg[6] = 1;
+                    msg[7] = d0;
                 }
-            }
+                TemporaryOn::Fmt2(d) => {
+                    msg[6] = 2;
+                    msg[7] = d[0];
+                    msg[8] = d[1];
+                }
+            },
             Cmd::Service(serv) => {
                 msg[7] = if serv { 1 } else { 0 };
             }
@@ -98,29 +79,29 @@ impl Request {
                 msg[9] = 170;
                 msg[10] = 85;
             }
-            Cmd::Off |
-            Cmd::BrightDown |
-            Cmd::On |
-            Cmd::BrightUp |
-            Cmd::Switch |
-            Cmd::BrightBack |
-            Cmd::LoadPreset |
-            Cmd::SavePreset |
-            Cmd::Unbind |
-            Cmd::StopBright |
-            Cmd::BrightStepDown |
-            Cmd::BrightStepUp |
-            Cmd::Bind |
-            Cmd::RollColor |
-            Cmd::SwitchColor |
-            Cmd::SwitchMode |
-            Cmd::SpeedMode |
-            Cmd::BatteryLow |
-            Cmd::SensTempHumi |
-            Cmd::Modes |
-            Cmd::ReadState |
-            Cmd::WriteState |
-            Cmd::SendState => {
+            Cmd::Off
+            | Cmd::BrightDown
+            | Cmd::On
+            | Cmd::BrightUp
+            | Cmd::Switch
+            | Cmd::BrightBack
+            | Cmd::LoadPreset
+            | Cmd::SavePreset
+            | Cmd::Unbind
+            | Cmd::StopBright
+            | Cmd::BrightStepDown
+            | Cmd::BrightStepUp
+            | Cmd::Bind
+            | Cmd::RollColor
+            | Cmd::SwitchColor
+            | Cmd::SwitchMode
+            | Cmd::SpeedMode
+            | Cmd::BatteryLow
+            | Cmd::SensTempHumi
+            | Cmd::Modes
+            | Cmd::ReadState
+            | Cmd::WriteState
+            | Cmd::SendState => {
                 // default parameters
             }
         }
@@ -145,14 +126,16 @@ impl Request {
 
 impl fmt::Display for Request {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ST:171 MODE:{} CTR:{} CH:{} CMD:{} ID:{} SP:172", self.mode, self.ctr, self.ch, self.cmd, self.id)
+        write!(
+            f,
+            "ST:171 MODE:{} CTR:{} CH:{} CMD:{} ID:{} SP:172",
+            self.mode, self.ctr, self.ch, self.cmd, self.id
+        )
     }
 }
 
 pub fn set_mode(md: Mode) -> Request {
-    let mut req = Request::default();
-    req.mode = md;
-    req
+    Request { mode: md, ..Default::default() }
 }
 
 pub fn bind(md: Mode, ch: u8) -> Result<Request, Error> {
@@ -167,24 +150,24 @@ pub fn bind(md: Mode, ch: u8) -> Result<Request, Error> {
 #[cfg(test)]
 mod test {
     use crate::cmd::*;
-    use crate::cmd::request::{Request, Request};
+    use crate::cmd::request::Request;
 
     #[test]
     pub fn test_crc() {
         let mut req = Request::default();
 
-        req.mode = Some(Mode::TxF);
+        req.mode = Mode::TxF;
         req.set_ch(5).unwrap();
-        req.cmd = Some(Cmd::Bind);
+        req.cmd = Cmd::Bind;
 
         assert_eq!(
-            Request([171, 2, 0, 0, 5, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 193, 172]),
+            [171, 2, 0, 0, 5, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 193, 172],
             req.to_message()
         );
 
-        req.cmd = Some(Cmd::Service(true));
+        req.cmd = Cmd::Service(true);
         assert_eq!(
-            Request([171, 2, 0, 0, 5, 131, 0, 1, 0, 0, 0, 0, 0, 0, 0, 54, 172]),
+            [171, 2, 0, 0, 5, 131, 0, 1, 0, 0, 0, 0, 0, 0, 0, 54, 172],
             req.to_message()
         );
     }

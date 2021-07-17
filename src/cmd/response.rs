@@ -3,7 +3,7 @@ use std::fmt;
 
 use anyhow::Error;
 
-use crate::cmd::{Cmd, CtrResponse, MESSAGE_LENGTH, Mode, CH_INDEX, CRC_INDEX};
+use crate::cmd::{Cmd, CtrResponse, Mode, CH_INDEX, CRC_INDEX, MESSAGE_LENGTH};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Response {
@@ -20,9 +20,7 @@ impl TryFrom<[u8; MESSAGE_LENGTH]> for Response {
     type Error = Error;
 
     fn try_from(value: [u8; 17]) -> Result<Self, Self::Error> {
-        let sum: u32 = value.iter().take(15)
-            .map(|b| *b as u32)
-            .sum();
+        let sum: u32 = value.iter().take(15).map(|b| *b as u32).sum();
 
         if sum.to_le_bytes()[0] != value[CRC_INDEX] {
             return Err(anyhow!("Invalid message crc:[{:?}]", value));
@@ -48,7 +46,11 @@ impl TryFrom<[u8; MESSAGE_LENGTH]> for Response {
 
 impl fmt::Display for Response {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ST:173 MODE:{} CTR:{} TOGL:{} CH:{} ", self.mode, self.ctr, self.togl, self.ch)?;
+        write!(
+            f,
+            "ST:173 MODE:{} CTR:{} TOGL:{} CH:{} ",
+            self.mode, self.ctr, self.togl, self.ch
+        )?;
         write!(f, "CMD:{} ", self.cmd)?;
         write!(f, "ID:{} ", self.id)?;
         write!(f, "CRC:{} ", self.crc)?;
