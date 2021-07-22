@@ -48,7 +48,7 @@ impl Mtrf {
         mut port: Box<dyn SerialPort>,
         req_rx: Receiver<(Request, bool)>,
         resp_tx: Sender<Response>,
-        on_msg: OnMsg,
+        mut on_msg: OnMsg,
     ) -> JoinHandle<()> {
         thread::spawn(move || {
             let mut wait_ch = None;
@@ -137,7 +137,7 @@ impl Drop for Mtrf {
 }
 
 pub trait OnMessage {
-    fn on_message(&self, msg: Response);
+    fn on_message(&mut self, msg: Response);
 }
 
 #[cfg(test)]
@@ -147,6 +147,7 @@ pub mod tests {
     use crate::cmd::response::Response;
     use crate::mtrf::{Mtrf, OnMessage};
     use crate::ports;
+    use std::thread;
 
     pub struct Logger;
 
@@ -160,7 +161,8 @@ pub mod tests {
     pub fn bind_and_read() {
         let port = &ports().unwrap()[0];
         let mut mtrf = Mtrf::new(port, Logger).unwrap();
-        mtrf.send_request(bind(Mode::TxF, 2).unwrap())
+        mtrf.send_request(bind(Mode::RxF, 0).unwrap())
             .unwrap();
+        thread::sleep_ms(2000);
     }
 }

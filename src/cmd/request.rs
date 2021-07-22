@@ -3,8 +3,8 @@ use std::fmt;
 use anyhow::Error;
 
 use crate::cmd::{
-    Cmd, CtrRequest, Mode, SetBrightness, TemporaryOn, CH_INDEX, CMD_INDEX, CRC_INDEX,
-    MESSAGE_LENGTH,
+    CH_INDEX, Cmd, CMD_INDEX, CRC_INDEX, CtrRequest, MESSAGE_LENGTH, Mode, SetBrightness,
+    TemporaryOn,
 };
 
 const ST: u8 = 171;
@@ -15,9 +15,9 @@ const RES: u8 = 0;
 pub struct Request {
     pub mode: Mode,
     pub ctr: CtrRequest,
-    ch: u8,
+    pub ch: u8,
     pub cmd: Cmd,
-    id: u32,
+    pub id: u32,
 }
 
 impl Request {
@@ -138,10 +138,8 @@ pub fn set_mode(md: Mode) -> Request {
     Request { mode: md, ..Default::default() }
 }
 
-pub fn bind(md: Mode, ch: u8) -> Result<Request, Error> {
-    let mut req = Request { mode: md, ctr: CtrRequest::BindModeOn, cmd: Cmd::Bind, ..Default::default() };
-    req.set_ch(ch)?;
-    Ok(req)
+pub fn bind(md: Mode, ch: u8) -> Request {
+     Request { mode: md, ctr: CtrRequest::BindModeOn, cmd: Cmd::Bind, ch, ..Default::default() }
 }
 
 #[cfg(test)]
