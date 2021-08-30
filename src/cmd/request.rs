@@ -3,8 +3,8 @@ use std::fmt;
 use anyhow::Error;
 
 use crate::cmd::{
-    CH_INDEX, Cmd, CMD_INDEX, CRC_INDEX, CtrRequest, MESSAGE_LENGTH, Mode, SetBrightness,
-    TemporaryOn,
+    Cmd, CtrRequest, Mode, SetBrightness, TemporaryOn, CH_INDEX, CMD_INDEX, CRC_INDEX,
+    MESSAGE_LENGTH,
 };
 
 const ST: u8 = 171;
@@ -135,17 +135,26 @@ impl fmt::Display for Request {
 }
 
 pub fn set_mode(md: Mode) -> Request {
-    Request { mode: md, ..Default::default() }
+    Request {
+        mode: md,
+        ..Default::default()
+    }
 }
 
 pub fn bind(md: Mode, ch: u8) -> Request {
-     Request { mode: md, ctr: CtrRequest::BindModeOn, cmd: Cmd::Bind, ch, ..Default::default() }
+    Request {
+        mode: md,
+        ctr: CtrRequest::BindModeOn,
+        cmd: Cmd::Bind,
+        ch,
+        ..Default::default()
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::cmd::*;
     use crate::cmd::request::Request;
+    use crate::cmd::*;
 
     #[test]
     pub fn test_crc() {
